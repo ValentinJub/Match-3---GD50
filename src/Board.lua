@@ -11,12 +11,20 @@
     sets of three horizontally or vertically.
 ]]
 
+-- only use half the colors to differentiate them better
+local colorSet1 = {
+    1,2,5,9,10,11,12,14,17
+}
+
+local function getColor() return colorSet1[math.random(#colorSet1)] end
+
 Board = Class{}
 
-function Board:init(x, y)
+function Board:init(x, y, level)
     self.x = x
     self.y = y
     self.matches = {}
+    self.level = level
 
     self:initializeTiles()
 end
@@ -24,15 +32,21 @@ end
 function Board:initializeTiles()
     self.tiles = {}
 
+    -- insert a row
     for tileY = 1, 8 do
         
         -- empty table that will serve as a new row
         table.insert(self.tiles, {})
 
+        -- fill the row with tiles
         for tileX = 1, 8 do
+
+            -- define color randomly, & variety depending on the level
+            local variety = self.level == 1 and 1 or math.random(1,math.min(6,self.level))
+            local color = getColor()
             
             -- create a new tile at X,Y with a random color and variety
-            table.insert(self.tiles[tileY], Tile(tileX, tileY, math.random(18), math.random(6)))
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, color, variety))
         end
     end
 
@@ -46,7 +60,7 @@ end
 
 --[[
     Goes left to right, top to bottom in the board, calculating matches by counting consecutive
-    tiles of the same color. Doesn't need to check the last tile in every row or column if the 
+    tiles of the same color & variety. Doesn't need to check the last tile in every row or column if the 
     last two haven't been a match.
 ]]
 function Board:calculateMatches()
@@ -57,20 +71,20 @@ function Board:calculateMatches()
 
     -- horizontal matches first
     for y = 1, 8 do
-        local colorToMatch = self.tiles[y][1].color
+        local colorToMatch, varietyToMatch = self.tiles[y][1].color, self.tiles[y][1].variety
 
         matchNum = 1
         
         -- every horizontal tile
         for x = 2, 8 do
             
-            -- if this is the same color as the one we're trying to match...
-            if self.tiles[y][x].color == colorToMatch then
+            -- if this is the same color & variety as the one we're trying to match...
+            if (self.tiles[y][x].color == colorToMatch) then
                 matchNum = matchNum + 1
             else
                 
-                -- set this as the new color we want to watch for
-                colorToMatch = self.tiles[y][x].color
+                -- set them as the new color & variety we want to watch for
+                colorToMatch, varietyToMatch = self.tiles[y][x].color, self.tiles[y][x].variety
 
                 -- if we have a match of 3 or more up to now, add it to our matches table
                 if matchNum >= 3 then
@@ -111,16 +125,16 @@ function Board:calculateMatches()
 
     -- vertical matches
     for x = 1, 8 do
-        local colorToMatch = self.tiles[1][x].color
+        local colorToMatch, varietyToMatch = self.tiles[1][x].color, self.tiles[1][x].variety
 
         matchNum = 1
 
         -- every vertical tile
         for y = 2, 8 do
-            if self.tiles[y][x].color == colorToMatch then
+            if (self.tiles[y][x].color == colorToMatch) then
                 matchNum = matchNum + 1
             else
-                colorToMatch = self.tiles[y][x].color
+                colorToMatch, varietyToMatch = self.tiles[y][x].color, self.tiles[y][x].variety
 
                 if matchNum >= 3 then
                     local match = {}
@@ -239,8 +253,12 @@ function Board:getFallingTiles()
             -- if the tile is nil, we need to add a new one
             if not tile then
 
+                -- define color randomly, & variety depending on the level
+                local color = getColor()
+                local variety = self.level == 1 and 1 or math.random(1,self.level)
+
                 -- new tile with random color and variety
-                local tile = Tile(x, y, math.random(18), math.random(6))
+                local tile = Tile(x, y, color, variety)
                 tile.y = -32
                 self.tiles[y][x] = tile
 
@@ -262,3 +280,4 @@ function Board:render()
         end
     end
 end
+
