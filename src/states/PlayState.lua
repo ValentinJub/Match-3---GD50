@@ -30,14 +30,15 @@ function PlayState:init()
     -- timer used to switch the highlight rect's color
     self.rectHighlighted = false
 
-    -- flag to show whether we're able to process input (not swapping or clearing)
+    -- flag to show whether we're able to process input (not swapping or clearing)half 
+    -- !!!! Flag not used 
     self.canInput = true
 
     -- tile we're currently highlighting (preparing to swap)
     self.highlightedTile = nil
 
     self.score = 0
-    self.timer = 6
+    self.timer = 120
 
     -- set our Timer class to turn cursor highlight on and off
     Timer.every(0.5, function()
@@ -124,7 +125,7 @@ function PlayState:update(dt)
         -- if we've pressed space, to select or deselect a tile...
         if love.keyboard.wasPressed('space') then
             
-            -- if same tile as currently highlighted, deselect
+            -- new highlighted tiles
             local x = self.boardHighlightX + 1
             local y = self.boardHighlightY + 1
             

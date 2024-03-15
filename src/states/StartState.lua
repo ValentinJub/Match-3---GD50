@@ -41,7 +41,7 @@ function StartState:init()
         {'3', 112}
     }
 
-    -- time for a color change if it's been half a second
+    -- time for a color change if it's been a third of a second
     self.colorTimer = Timer.every(0.075, function()
         
         -- shift every color to the next, looping the last to front
