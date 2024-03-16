@@ -16,6 +16,7 @@ local colorSet1 = {
     1,2,5,9,10,11,12,14,17
 }
 
+-- return a random color from our colorset
 local function getColor() return colorSet1[math.random(#colorSet1)] end
 
 Board = Class{}
@@ -41,12 +42,15 @@ function Board:initializeTiles()
         -- fill the row with tiles
         for tileX = 1, 8 do
 
+            -- 1/32 chance of getting a shiny
+            local shiny = math.random(12)
+
             -- define color randomly, & variety depending on the level
             local variety = self.level == 1 and 1 or math.random(1,math.min(6,self.level))
             local color = getColor()
             
             -- create a new tile at X,Y with a random color and variety
-            table.insert(self.tiles[tileY], Tile(tileX, tileY, color, variety))
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, color, variety, shiny))
         end
     end
 
@@ -84,25 +88,39 @@ function Board:calculateMatches()
             else
                 
                 -- set them as the new color & variety we want to watch for
-                colorToMatch, varietyToMatch = self.tiles[y][x].color, self.tiles[y][x].variety
+                colorToMatch = self.tiles[y][x].color
 
                 -- if we have a match of 3 or more up to now, add it to our matches table
                 if matchNum >= 3 then
                     local match = {}
                     local varietyToMatch, varietyMatchNum = 0, 1
-    
-                    -- go backwards from here by matchNum
+                    local blowRow = false
+
                     for x2 = x - 1, x - matchNum, -1 do
-
-                        -- each consecutive variety matched will increase the multiplier by 1
-                        if varietyToMatch == self.tiles[y][x2] then
-                            varietyMatchNum = varietyMatchNum + 1
-                        else
-                            varietyToMatch = self.tiles[y][x2]
+                        if self.tiles[y][x2].shiny then
+                            blowRow = true
                         end
+                    end
+    
+                    if blowRow then
+                        -- remove whole row
+                        for q = 1, 8 do
+                            table.insert(match, self.tiles[y][q])
+                        end
+                    else
+                        -- go backwards from here by matchNum
+                        for x2 = x - 1, x - matchNum, -1 do
 
-                        -- add each tile to the match that's in that match
-                        table.insert(match, self.tiles[y][x2])
+                            -- each consecutive variety matched will increase the multiplier by 1
+                            if varietyToMatch == self.tiles[y][x2] then
+                                varietyMatchNum = varietyMatchNum + 1
+                            else
+                                varietyToMatch = self.tiles[y][x2]
+                            end
+
+                            -- add each tile to the match that's in that match
+                            table.insert(match, self.tiles[y][x2])
+                        end
                     end
 
                     -- add multiplier in each
@@ -138,7 +156,7 @@ function Board:calculateMatches()
 
     -- vertical matches
     for x = 1, 8 do
-        local colorToMatch, varietyToMatch = self.tiles[1][x].color, self.tiles[1][x].variety
+        local colorToMatch = self.tiles[1][x].color
 
         matchNum = 1
 
@@ -147,15 +165,34 @@ function Board:calculateMatches()
             if (self.tiles[y][x].color == colorToMatch) then
                 matchNum = matchNum + 1
             else
-                colorToMatch, varietyToMatch = self.tiles[y][x].color, self.tiles[y][x].variety
+                colorToMatch  = self.tiles[y][x].color
+                local varietyToMatch = self.tiles[y][x].variety
 
                 if matchNum >= 3 then
                     local match = {}
 
-                    for y2 = y - 1, y - matchNum, -1 do
-                        table.insert(match, self.tiles[y2][x])
-                    end
+                    local blowRow = false
+                    local rowToBlow = 0
 
+                    for y2 = y - 1, y - matchNum, -1 do
+                        if self.tiles[y2][x].shiny then
+                            blowRow = true
+                            rowToBlow = y2
+                        end
+                    end
+    
+                    if blowRow then
+                        -- remove whole row
+                        for q = 1, 8 do
+                            table.insert(match, self.tiles[rowToBlow][q])
+                        end
+                    else
+                        for y2 = y - 1, y - matchNum, -1 do
+
+                            table.insert(match, self.tiles[y2][x])
+                        end
+                    end
+                    
                     table.insert(matches, match)
                 end
 
@@ -266,12 +303,15 @@ function Board:getFallingTiles()
             -- if the tile is nil, we need to add a new one
             if not tile then
 
+                -- 1/32 chance of getting a shiny
+                local shiny = math.random(32)
+
                 -- define color randomly, & variety depending on the level
                 local color = getColor()
                 local variety = self.level == 1 and 1 or math.random(1,self.level)
 
                 -- new tile with random color and variety
-                local tile = Tile(x, y, color, variety)
+                local tile = Tile(x, y, color, variety, shiny)
                 tile.y = -32
                 self.tiles[y][x] = tile
 
