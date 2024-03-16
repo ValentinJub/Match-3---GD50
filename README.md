@@ -8,6 +8,15 @@
 
 - Add mouse controls.
 
+### Hint
+
+Convert coordinates
+
+push:toGame(x, y) --convert coordinates from screen to game (useful for mouse position)
+--push:toGame will return nil for the values that are outside the game - be sure to check that before using them
+
+push:toReal(x, y) --convert coordinates from game to screen
+
 ## Implemented
 
 - Implemented time addition on matches, such that scoring a match extends the timer by 1 second per tile in a match.
