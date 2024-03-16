@@ -71,7 +71,7 @@ function Board:calculateMatches()
 
     -- horizontal matches first
     for y = 1, 8 do
-        local colorToMatch, varietyToMatch = self.tiles[y][1].color, self.tiles[y][1].variety
+        local colorToMatch = self.tiles[y][1].color
 
         matchNum = 1
         
@@ -89,12 +89,25 @@ function Board:calculateMatches()
                 -- if we have a match of 3 or more up to now, add it to our matches table
                 if matchNum >= 3 then
                     local match = {}
-
+                    local varietyToMatch, varietyMatchNum = 0, 1
+    
                     -- go backwards from here by matchNum
                     for x2 = x - 1, x - matchNum, -1 do
-                        
+
+                        -- each consecutive variety matched will increase the multiplier by 1
+                        if varietyToMatch == self.tiles[y][x2] then
+                            varietyMatchNum = varietyMatchNum + 1
+                        else
+                            varietyToMatch = self.tiles[y][x2]
+                        end
+
                         -- add each tile to the match that's in that match
                         table.insert(match, self.tiles[y][x2])
+                    end
+
+                    -- add multiplier in each
+                    for k, tile in pairs(match) do
+                        tile.multiplier = varietyMatchNum
                     end
 
                     -- add this match to our total matches table

@@ -194,9 +194,15 @@ function PlayState:calculateMatches()
         gSounds['match']:stop()
         gSounds['match']:play()
 
-        -- add score for each match
+        -- add score for each match array
         for k, match in pairs(matches) do
-            self.score = self.score + #match * 100
+            -- for each tile in our match
+            for j, tile in pairs(match) do
+                -- add 1 second per tile
+                self.timer = math.min(120, self.timer + 1)
+                -- calculate score, make sure it is an integer
+                self.score = math.ceil(self.score + ((#match * 20) * (tile.multiplier + (tile.variety / 10))))
+            end
         end
 
         -- remove any tiles that matched from the board, making empty spaces
