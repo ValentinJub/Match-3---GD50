@@ -50,7 +50,7 @@ function PlayState:init()
     end)
 
     -- subtract 1 from timer every second
-    Timer.every(1, function()
+    self.dong = Timer.every(1, function()
         self.timer = self.timer - 1
 
         -- play warning sound on timer if we get low
@@ -320,6 +320,7 @@ function PlayState:update(dt)
                                 score = self.score,
                                 board = self.board
                             })
+                            self.dong:remove()
                         end
                     end)
 
@@ -354,8 +355,14 @@ function PlayState:calculateMatches()
 
         -- add score for each match array
         for k, match in pairs(matches) do
+            local boom = false
             -- for each tile in our match
             for j, tile in pairs(match) do
+                if tile.shiny and not boom then
+                    gSounds['blow-row']:stop()
+                    gSounds['blow-row']:play()
+                    boom = true
+                end
                 -- add 1 second per tile
                 self.timer = math.min(120, self.timer + 1)
                 -- calculate score, make sure it is an integer

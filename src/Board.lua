@@ -185,9 +185,24 @@ function Board:calculateMatches()
         if matchNum >= 3 then
             local match = {}
             
-            -- go backwards from end of last row by matchNum
-            for x = 8, 8 - matchNum + 1, -1 do
-                table.insert(match, self.tiles[y][x])
+            local blowRow = false
+
+            for x2 = 8, 8 - matchNum + 1, -1 do
+                if self.tiles[y][x2].shiny then
+                    blowRow = true
+                end
+            end
+
+            if blowRow then
+                -- remove whole row
+                for q = 1, 8 do
+                    table.insert(match, self.tiles[y][q])
+                end
+            else
+                -- go backwards from end of last row by matchNum
+                for x2 = 8, 8 - matchNum + 1, -1 do
+                    table.insert(match, self.tiles[y][x2])
+                end
             end
 
             table.insert(matches, match)
@@ -226,9 +241,11 @@ function Board:calculateMatches()
                         for q = 1, 8 do
                             table.insert(match, self.tiles[rowToBlow][q])
                         end
-                    else
-                        for y2 = y - 1, y - matchNum, -1 do
-
+                        gSounds['blow-row']:stop()
+                        gSounds['blow-row']:play()
+                    end
+                    for y2 = y - 1, y - matchNum, -1 do
+                        if y2 ~= rowToBlow then
                             table.insert(match, self.tiles[y2][x])
                         end
                     end
@@ -248,10 +265,31 @@ function Board:calculateMatches()
         -- account for the last column ending with a match
         if matchNum >= 3 then
             local match = {}
+
+            local blowRow = false
+            local rowToBlow = 0
+
+            for y2 = 8, 8 - matchNum + 1, -1 do
+                if self.tiles[y2][x].shiny then
+                    blowRow = true
+                    rowToBlow = y2
+                end
+            end
+
+            if blowRow then
+                -- remove whole row
+                for q = 1, 8 do
+                    table.insert(match, self.tiles[rowToBlow][q])
+                end
+                gSounds['blow-row']:stop()
+                gSounds['blow-row']:play()
+            end
             
             -- go backwards from end of last row by matchNum
-            for y = 8, 8 - matchNum + 1, -1 do
-                table.insert(match, self.tiles[y][x])
+            for y2 = 8, 8 - matchNum + 1, -1 do
+                if y2 ~= rowToBlow then
+                    table.insert(match, self.tiles[y2][x])
+                end
             end
 
             table.insert(matches, match)
