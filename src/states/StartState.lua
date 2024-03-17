@@ -63,6 +63,9 @@ function StartState:init()
 
     -- if we've selected an option, we need to pause input while we animate out
     self.pauseInput = false
+
+    self.mouseX = 0
+    self.mouseY = 0
 end
 
 function StartState:update(dt)

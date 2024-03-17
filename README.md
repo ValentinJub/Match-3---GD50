@@ -5,6 +5,10 @@
 
 - Add mouse controls.
 
+## Bug to fix
+
+- The shiny row destruction prevent column match in some instances
+
 ### Hint
 
 Convert coordinates

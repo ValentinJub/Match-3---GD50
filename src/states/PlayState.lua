@@ -38,7 +38,11 @@ function PlayState:init()
     self.highlightedTile = nil
 
     self.score = 0
-    self.timer = 1200
+    self.timer = 90
+
+    self.mouseX = 0
+    self.mouseY = 0
+    self.mouseClick = false
 
     -- set our Timer class to turn cursor highlight on and off
     Timer.every(0.5, function()
@@ -228,6 +232,26 @@ function PlayState:update(dt)
     end
 
     if self.canInput then
+
+        -- get mouse position
+        local mX, mY = love.mouse.getPosition()
+        -- translate mouse position to virtual screen resolution
+        self.mouseX, self.mouseY = push:toGame(mX, mY)
+
+        -- self.board.x|y is "our" 0,0 coordinate or our offset to the screen
+        local offsetX, offsetY = self.board.x, self.board.y
+
+        for k, row in pairs(self.board.tiles) do
+            for j, tile in pairs(row) do
+                local tileX, tileY = offsetX + tile.x, offsetY + tile.y
+                if (self.mouseX > tileX and self.mouseX < tileX + 32) and (self.mouseY > tileY and self.mouseY < tileY + 32) then
+                        self.boardHighlightX, self.boardHighlightY = tile.gridX - 1, tile.gridY - 1
+                        if love.mouse.isDown(1) then self.mouseClick = true end
+                end
+            end
+        end
+
+
         -- move cursor around based on bounds of grid, playing sounds
         if love.keyboard.wasPressed('up') then
             self.boardHighlightY = math.max(0, self.boardHighlightY - 1)
@@ -244,7 +268,9 @@ function PlayState:update(dt)
         end
 
         -- if we've pressed space, to select or deselect a tile...
-        if love.keyboard.wasPressed('space') then
+        if love.keyboard.wasPressed('space') or self.mouseClick then
+
+            self.mouseClick = false
             
             -- new highlighted tiles
             local x = self.boardHighlightX + 1

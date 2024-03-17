@@ -16,9 +16,9 @@ Tile = Class{}
 -- shiny tile will have their alpha go up and down, rendering a shiny effect
 local function tweenAlpha(tile)
 
-    if tile.alpha < 255 then
+    if tile.alpha < 175 then
         Timer.tween(1, {
-            [tile] = {alpha = 255, red = 255, green = 255, blue = 255}
+            [tile] = {alpha = 175, red = 175, green = 175, blue = 175}
         }):finish(function() tweenAlpha(tile) end)
     else
         Timer.tween(1, {
