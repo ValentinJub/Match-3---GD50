@@ -38,7 +38,7 @@ function PlayState:init()
     self.highlightedTile = nil
 
     self.score = 0
-    self.timer = 120
+    self.timer = 1200
 
     -- set our Timer class to turn cursor highlight on and off
     Timer.every(0.5, function()
@@ -62,7 +62,7 @@ function PlayState:enter(params)
     self.level = params.level
 
     -- spawn a board and place it toward the right
-    self.board = params.board or Board(VIRTUAL_WIDTH - 272, 16)
+    self.board = params.board or Board(VIRTUAL_WIDTH - 272, 16, self.level)
 
     -- grab score from params if it was passed
     self.score = params.score or 0
@@ -71,29 +71,130 @@ function PlayState:enter(params)
     self.scoreGoal = self.level * 2 * 1000
 end
 
--- swap two tiles in the board
+-- swap two tiles in the provided board
 local function swapTile(tile1, tile2, board)
     -- swap grid positions of tiles
     local tempX = tile1.gridX
     local tempY = tile1.gridY
 
-    local newTile = tile2
+    tile1.gridX = tile2.gridX
+    tile1.gridY = tile2.gridY
 
-    tile1.gridX = newTile.gridX
-    tile1.gridY = newTile.gridY
-
-    newTile.gridX = tempX
-    newTile.gridY = tempY
+    tile2.gridX = tempX
+    tile2.gridY = tempY
 
     -- swap tiles in the tiles table
     board.tiles[tile1.gridY][tile1.gridX] = tile1
 
-    board.tiles[newTile.gridY][newTile.gridX] = tile2
+    board.tiles[tile2.gridY][tile2.gridX] = tile2
+end
+
+-- returns whether swapping two tiles returns a match
+local function swapIsMatch(tile1, tile2, board)
+    swapTile(tile1, tile2, board)
+    -- if we have a match, return false, we are not out of move
+    if board:calculateMatches() then
+        return true
+    end
+    -- swap back
+    swapTile(tile1, tile2, board)
+    return false
+end
+
+
+
+-- test all possible swaps and return true if there aren't any
+-- possible move that can result in a match
+function isOutOfMove(board)
+
+    -- -- create a local copy of the board tiles
+    -- local tileCopy = {}
+    -- for y = 1, 8 do
+    --     local row = {}
+    --     for x = 1, 8 do
+    --         table.insert(row, board[y][x])
+    --     end
+    --     table.insert(tileCopy, row)
+    -- end
+
+    function deepcopy(orig)
+        local orig_type = type(orig)
+        local copy
+        if orig_type == 'table' then
+            copy = {}
+            for orig_key, orig_value in next, orig, nil do
+                copy[orig_key] = deepcopy(orig_value)
+            end
+        else -- number, string, boolean, etc
+            copy = orig
+        end
+        return copy
+    end
+    
+    -- usage
+    local tileCopy = deepcopy(board)
+
+
+    -- create a copy of the board with our copied tiles
+    local boardCopy = Board(VIRTUAL_WIDTH - 272, 16, 1, tileCopy)
+
+    -- traverse the board row by row
+    for y = 1, 8 do
+        
+        -- for each tile 
+        for x = 1, 8 do
+            local curTile = boardCopy.tiles[y][x]
+            -- not the bottom row, can check below
+            if y ~= 8 then
+                local botTile = boardCopy.tiles[y + 1][x]
+                -- not the rightmost tile, can check right
+                if x ~= 8 then
+                    local rightTile = boardCopy.tiles[y][x + 1]
+                    -- if the swap is a match, we aren't out of move
+                    if swapIsMatch(curTile, botTile, boardCopy) or swapIsMatch(curTile, rightTile, boardCopy) then
+                        return false
+                    end
+                -- rightmost tile, only check below
+                else
+                    -- if the swap is a match, we aren't out of move
+                    if swapIsMatch(curTile, botTile, boardCopy) then
+                        return false
+                    end
+                end
+            -- bottom row, only check right
+            else
+                -- if we aren't the rightmost tile, check right
+                if x ~= 8 then
+                    local rightTile = boardCopy.tiles[y][x + 1]
+                    -- if the swap is a match, we aren't out of move
+                    if swapIsMatch(curTile, rightTile, boardCopy) then
+                        return false
+                    end
+                -- bottom and rightmost tile, do nothing
+                else
+                    -- do nothing
+                end
+            end
+        end
+    end
+
+    -- if we've reached here it means we haven't found any possible move
+    -- we are effectively out of moves.
+    return true
 end
 
 function PlayState:update(dt)
     if love.keyboard.wasPressed('escape') then
         love.event.quit()
+    end
+
+    -- triggers an out of move transition, for debugging purposes only
+    if love.keyboard.wasPressed('d') then
+        gStateMachine:change('reset', {
+            level = self.level,
+            score = self.score,
+            board = self.board
+        })
     end
 
     -- go back to start if time runs out
@@ -157,11 +258,11 @@ function PlayState:update(dt)
             elseif self.highlightedTile == self.board.tiles[y][x] then
                 self.highlightedTile = nil
 
-            -- if the difference between X and Y combined of this highlighted tile
-            -- vs the previous is not equal to 1, also remove highlight
+            -- we haven't selected a tile adjacent to us
             elseif math.abs(self.highlightedTile.gridX - x) + math.abs(self.highlightedTile.gridY - y) > 1 then
                 gSounds['error']:play()
                 self.highlightedTile = nil
+            -- we have selected a tile we could potentially swap with
             else
                 --[[ 
                     to only allow swapping if it results in a match we need to perform the swap
@@ -176,16 +277,26 @@ function PlayState:update(dt)
                 -- if we are returned with a match we can do the tween
                 -- else we swap back the tiles
                 if self.board:calculateMatches() then
-                    -- tween coordinates between the two so they swap
+                    -- tween coordinates between the two so they can be visually swapped
                     Timer.tween(0.1, {
                         [self.highlightedTile] = {x = newTile.x, y = newTile.y},
                         [newTile] = {x = self.highlightedTile.x, y = self.highlightedTile.y}
-                    })
-                    
+                    })                 
                     -- once the swap is finished, we can tween falling blocks as needed
                     :finish(function()
                         self:calculateMatches()
+
+                        -- check that we are not out of moves, if yes we transition to another state
+                        if isOutOfMove(self.board.tiles) then
+                            -- change to begin game state with new level (incremented)
+                            gStateMachine:change('reset', {
+                                level = self.level,
+                                score = self.score,
+                                board = self.board
+                            })
+                        end
                     end)
+
                 -- the swap did not return a match, swap back and remove tile highlight
                 else
                     swapTile(prevTile, newTile, self.board)

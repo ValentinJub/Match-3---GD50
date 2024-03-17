@@ -31,11 +31,12 @@ end
 
 function Tile:init(x, y, color, variety, shiny) 
     
-    -- board positions
+    -- board x position from 1 to 8
     self.gridX = x
+    -- board y position from 1 to 8
     self.gridY = y
 
-    -- coordinate positions
+    -- screen coordinate positions for rendering
     self.x = (self.gridX - 1) * 32
     self.y = (self.gridY - 1) * 32
 

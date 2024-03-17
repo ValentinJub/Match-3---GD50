@@ -21,16 +21,56 @@ local function getColor() return colorSet1[math.random(#colorSet1)] end
 
 Board = Class{}
 
-function Board:init(x, y, level)
+function Board:init(x, y, level, tiles)
     self.x = x
     self.y = y
     self.matches = {}
     self.level = level
 
-    self:initializeTiles()
+    -- only initialise random tiles if we're not already passing ones
+    if not tiles then
+        if self.level ~= 666 then
+            self:initializeTiles()
+        else 
+            self:initDebugTiles()
+        end
+    else
+        self.tiles = tiles
+    end
+end
+
+-- still a random distribution but with twice as much colors, should trigger more out of move events
+function Board:initDebugTiles()
+    self.tiles = {}
+
+    -- insert a row
+    for tileY = 1, 8 do
+        
+        -- empty table that will serve as a new row
+        table.insert(self.tiles, {})
+
+        -- fill the row with tiles
+        for tileX = 1, 8 do
+
+            -- define color randomly, & variety depending on the level
+            local variety = math.random(6)
+            local color = math.random(18)
+            
+            -- create a new tile at X,Y with a random color and variety
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, color, variety))
+        end
+    end
+
+    while self:calculateMatches() or isOutOfMove(self.tiles) do
+        
+        -- recursively initialize if matches were returned so we always have
+        -- a matchless board on start
+        self:initDebugTiles()
+    end
 end
 
 function Board:initializeTiles()
+    
     self.tiles = {}
 
     -- insert a row
@@ -192,7 +232,7 @@ function Board:calculateMatches()
                             table.insert(match, self.tiles[y2][x])
                         end
                     end
-                    
+
                     table.insert(matches, match)
                 end
 
@@ -308,7 +348,7 @@ function Board:getFallingTiles()
 
                 -- define color randomly, & variety depending on the level
                 local color = getColor()
-                local variety = self.level == 1 and 1 or math.random(1,self.level)
+                local variety = self.level == 1 and 1 or math.random(1,math.min(6,self.level))
 
                 -- new tile with random color and variety
                 local tile = Tile(x, y, color, variety, shiny)

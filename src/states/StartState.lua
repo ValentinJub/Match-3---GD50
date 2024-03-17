@@ -79,6 +79,15 @@ function StartState:update(dt)
             gSounds['select']:play()
         end
 
+        -- debug option
+        if love.keyboard.wasPressed('d') then
+            gStateMachine:change('begin-game', {
+                level = 666
+            })
+            -- remove color timer from Timer
+            self.colorTimer:remove()
+        end
+
         -- switch to another state via one of the menu options
         if love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return') then
             if self.currentMenuItem == 1 then
